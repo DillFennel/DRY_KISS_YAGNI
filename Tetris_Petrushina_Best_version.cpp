@@ -5,12 +5,10 @@
 
 #include <iostream>
 #include <vector>
-#include <algorithm>
-#include <cstdlib>
+#include <algorithm> // all_of, min, max
+#include <cstdlib> // system("clear")
 #include <map>
-#include <stdexcept>
 #include <string>
-#include <utility>
 
 using namespace std;
 
@@ -33,7 +31,6 @@ enum Cell {
 
 const map<Cell, string> cell_color = {
     {Cell::Hidden, "238"},
-    {Cell::Empty, ""},
     {Cell::Active, "255"},
     {Cell::FigureT, "105"},
     {Cell::FigureS, "10"},
@@ -83,26 +80,26 @@ const vector<Figure> FIGURES = {
       {1, 1}}, FigureO}
 };
 
+// YAGNI - я убрала из конструкторов классов все лишние переменные, которые скорее всего всегда будут браться те, что по умолчанию
 class Map {
 private:
     int x_map;
     int y_map;
-    int buffer_layers;
+    int buffer_layers = 2;
 
     vector<vector<Cell>> map;
 
 public:
     Map(
         int height = 7,
-        int width = 5,
-        int buffer = 2
+        int width = 5
     ): 
         x_map(width),
-        y_map(height),
-        buffer_layers(buffer)
+        y_map(height)
     {
         if (height <= 0 || width <= 0) {
-            throw invalid_argument("Map dimensions must be positive");
+            cout << "Wrong map dimensions!" << endl;
+            exit(1);
         }
         make_empty_map(map, y_map + buffer_layers, x_map);
     }
@@ -144,7 +141,7 @@ public:
                 cleared_map[target_y--] = map[y];
             }
         }
-        map = std::move(cleared_map);
+        map = cleared_map;
         return count_layers;
     }
 
@@ -213,14 +210,14 @@ public:
 - Engine отвечает за логику игры
 */
 class Engine {
-    int points_per_figure;
-    int points_per_layer;
+    int points_per_figure = 1;
+    int points_per_layer = 10;
 
     int points = 0;
-    bool alive;
-    bool figure_exist;
-    int x_coords;
-    int y_coords;
+    bool alive = true;
+    bool figure_exist = false;
+    int x_coords = 0;
+    int y_coords = 0;
 
     Map map;
     Figure figure;
@@ -247,7 +244,7 @@ class Engine {
         // Если поворот невозможен, оставляем фигуру в том же положении что и до этого, иначе:
         if (map.can_place(rotated, x_coords, y_coords)) {
             map.erase_figure(figure, y_coords, x_coords);
-            figure.model = std::move(rotated);
+            figure.model = rotated;
             map.draw_figure(figure, y_coords, x_coords, Cell::Active);
         }
     }
@@ -264,20 +261,6 @@ class Engine {
     }
 
 public:
-    Engine(
-        int input_points_per_figure = 1,
-        int input_points_per_layer = 10
-    ):
-        points_per_figure(input_points_per_figure),
-        points_per_layer(input_points_per_layer),
-        points(0),
-        alive(true),
-        figure_exist(false),
-        x_coords(0),
-        y_coords(0),
-        map()
-    {}
-
     bool get_figure_exist() { return figure_exist; }
     bool get_alive() { return alive; }
     int get_points() { return points; }
@@ -301,7 +284,8 @@ public:
     // direction: влево = -1, вправо = 1
     void move(int direction) {
         if (direction != -1 && direction != 1) {
-            throw invalid_argument("Invalid direction!");
+            cout << "Invalid direction!" << endl;
+            exit(1);
         }
         if (figure_exist && alive) {
             try_move(direction, 0);
@@ -351,7 +335,7 @@ class StepsCounter {
 public:
     StepsCounter(
         int input_steps = 5,
-        int input_timer = 8
+        int input_timer = 15
     ) : upper_bound_timer(input_timer),
         upper_bound_steps(input_steps),
         current_timer(input_timer),
@@ -426,7 +410,7 @@ int main()
                         break;
                     }
                     case 's':{
-                        // YAGNI: Тут зачем-то отдельно были расчеты с таймером и шагами, зачем уменьшать их только тут, непонятно
+                        // KISS: Тут зачем-то отдельно были расчеты с таймером и шагами, зачем уменьшать их только тут, непонятно
                         engine.fall();
                         break;
                     }
